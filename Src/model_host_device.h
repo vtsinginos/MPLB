@@ -31,6 +31,55 @@ static inline OPS_FUN_PREFIX Real CalcBodyForce(const int xiIndex, const Real rh
     return WEIGHTS[xiIndex] * rho * cf;
 }
 
+
+static inline OPS_FUN_PREFIX Real CalcBodyForce2ndOrder(const int xiIndex, const Real rho, const Real uf,
+														const Real vf,const Real wf,const Real* accel) {
+
+	Real sum, sum1;
+	Real u[LATTDIM];
+	u[0] = uf;
+	u[1] = vf;
+	u[2] = wf;
+	sum = 0.0;
+
+		for (int iIndex = 0; iIndex < LATTDIM; iIndex++) {
+			sum1 = XI[xiIndex * LATTDIM + iIndex] * CS;
+			for (int jIndex = 0; jIndex < LATTDIM; jIndex++) {
+				sum1 += XI[LATTDIM * xiIndex + iIndex] * CS * XI[LATTDIM * xiIndex + jIndex] * CS * u[jIndex];
+				if (iIndex == jIndex)
+					sum1 += -1.0 * u[jIndex];
+
+			}
+			sum += sum1 * accel[iIndex];
+		}
+
+		return sum * WEIGHTS[xiIndex] * rho;
+}
+
+static inline OPS_FUN_PREFIX Real CalcBodyForce2ndOrder(const int xiIndex, const Real rho, const Real uf,
+														const Real vf,const Real* accel) {
+
+	Real sum, sum1;
+	Real u[LATTDIM];
+	u[0] = uf;
+	u[1] = vf;
+	sum = 0.0;
+
+		for (int iIndex = 0; iIndex < LATTDIM; iIndex++) {
+			sum1 = XI[xiIndex * LATTDIM + iIndex] * CS;
+			for (int jIndex = 0; jIndex < LATTDIM; jIndex++) {
+				sum1 += XI[LATTDIM * xiIndex + iIndex] * CS * XI[LATTDIM * xiIndex + jIndex] * CS * u[jIndex];
+				if (iIndex == jIndex)
+					sum1 += -1.0 * u[jIndex];
+
+			}
+			sum += sum1 * accel[iIndex];
+		}
+
+		return sum * WEIGHTS[xiIndex] * rho;
+}
+
+
 static inline OPS_FUN_PREFIX Real CalcBGKFeq(const int l, const Real rho, const Real u, const Real v,
                 const Real T, const int polyOrder) {
     Real cu{(CS * XI[l * LATTDIM] * u + CS * XI[l * LATTDIM + 1] * v)};

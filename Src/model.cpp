@@ -328,7 +328,10 @@ void DefineMacroVars(std::vector<VariableTypes> types,
     } else {
         ops_printf("Warning! There seems no macroscopic variables defined!\n");
     }
-
+//types: Types of macroscopic variables
+//names: names of macroscopic variables
+//compoId: component type
+//Are total variables
     for (int idx = 0; idx < numMacroVar; idx++) {
         MacroVariable macroVar;
         macroVar.name = names.at(idx);
