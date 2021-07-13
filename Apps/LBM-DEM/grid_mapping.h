@@ -30,17 +30,24 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*! @brief  Head files for configuring the fluid-particle interaction model
- * @author C. Tsigginos
- * @details The header of any new mapping model must be inserted here in.
+/*!
+ * @brief   Wrapper functions for mapping particles into LBM grid via the subcell method
+ * @author  C. Tsigginos
  */
-#ifndef MAPPING_MODELS_H_
-#define MAPPING_MODELS_H_
+#ifndef GRID_MAPPING_H_
+#define GRID_MAPPING_H_
 
-#include "poros_spherical.h"
-#include "grid_mapping.h"
+#include "type.h"
+#include "flowfield.h"
+#include "scheme.h"
+#include "dem_data.h"
+#include "mapping_particles.h"
+#include <vector>
+#include <memory>
 
+void ParticleProjectionSphereGrid(std::shared_ptr<MappingParticles>& mappingPtr,
+								  int component);
+void UpdateProjectectionSphereGrid(std::shared_ptr<MappingParticles>& mappingPtr,
+								   int component);
 
-
-
-#endif /* APPS_LBM_DEM_MAPPING_MODELS_H_ */
+#endif /* APPS_LBM_DEM_NOP_SPHERICAL_MAPPING_H_ */

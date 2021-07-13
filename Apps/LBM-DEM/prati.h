@@ -28,78 +28,33 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 
-/*! @brief Base class for the implementation of the PRATI scheme
- *  @author C. Tsigginos
- **/
+/*!
+ * @brief   Functions for the implementation of PRATI scheme
+ * @author  C. Tsigginos
+ */
+
+
 #ifndef PRATI_H_
 #define PRATI_H_
 
-#include "fsi_base.h"
-#include "field.h"
-#include "block.h"
-#include "type.h"
-#include <string>
-#include "model.h"
 #include "block_particles.h"
-#include "mapping_models.h"
+#include "fpi_data.h"
+#include "mapping_particles.h"
+#include "particle_mapping.h"
+#include <memory>
+#include <vector>
+#include "dem_data.h"
+#include "block.h"
+#include "flowfield.h"
+#include "scheme.h"
+#include "type.h"
 
-class Prati : public FsiBase {
+void FsiInitializePrati(std::shared_ptr<FpiData>& fpiPtr);
+void FsiPostVelocitiesPrati(std::shared_ptr<FpiData>& fpiPtr);
+void FsiForcePrati(std::shared_ptr<FpiData>& fpiPtr);
+void FsiCollisionsPrati(std::shared_ptr<FpiData>& fpiPtr);
+void CalculateDragPrati(std::shared_ptr<FpiData>& fpiPtr);
 
-	protected:
-		RealField Fd;
-		ParticleToGridBase* poros; //TODO: Add the porosity model
-		int noElem = 1;
-
-	public:
-	Prati(Component componentUser, int spacedim, Real* forceUser, bool owned = false,
-			SolFracType porosModel = Mode_None, Real gammaUser = 0.0, int nelem = 2, int ParticleType = 1);
-	~Prati();
-	virtual void ModelCollision(); //Dpme
-	virtual void CalculateDragForce();//Done
-	virtual void PostVelocityCalculation(); //Done
-	virtual void MappingFunction(bool flag); //Done
-	virtual void DefineVariables(SizeType timestep = 0); //DONE
-    virtual void InitializeVariables(); //DONE
-    virtual void WriteToHdf5(const std::string& caseName, const SizeType timeStep);
-
-	static void KerCollisionPrati3D(ACC<Real>& fcopy, ACC<Real>& Fd, const ACC<Real> f,
-			const ACC<Real>& coordinates, const ACC<Real>& nodeType,
-			const ACC<Real>& rho, const ACC<Real>& U, const ACC<Real>& V,
-			const ACC<Real>& W,const ACC<int> &id,const ACC<Real>& sfp,
-			const ACC<Real>& vp, const Real* dt, const Real* tau,
-			const int* forceFlag, const Real* force, const Real* gamma,
-			const int* nElem, const int* spacedim, const int* lattIdx);
-
-	static  void KerPratiUpdateU3D(ACC<Real>&U, const ACC<int>& nodeType, const ACC<int>& idp,
-			const ACC<Real>& sfm, const ACC<Real>& vp, const Real* dt, const Real* tau,
-			const Real* gammaM, const int* forceflag, const Real* force, const int* noelems,
-			const int* spacedim);
-
-	static void  KerPratiUpdateV3D(ACC<Real>&V, const ACC<int>& nodeType, const ACC<int>& idp,
-			const ACC<Real>& sfm, const ACC<Real>& vp, const Real* dt, const Real* tau,
-			const Real* gammaM, const int* forceflag, const Real* force, const int* noelems,
-			const int* spacedim);
-
-	static void KerPratiUpdateW3D(ACC<Real>&W, const ACC<int>& nodeType, const ACC<int>& idp,
-			const ACC<Real>& sfm, const ACC<Real>& vp, const Real* dt, const Real* tau,
-			const Real* gammaM, const int* forceflag, const Real* force, const int* noelems,
-			const int* spacedim);
-
-	static void KerDragPRATI(const ACC<int>& id, const ACC<Real>& sfp, const ACC<Real>& xf,
-			const ACC<Real>& Fd, Real* FDp, Real* TDp, const int* idp, const Real* xp,
-			const Real* dt, const Real* tau, const Real* gamma,
-			const int* spacedim, const int* nelem);
-
-	static void KerInitialize(ACC<Real>& Fd, const int* size);
-
-	//static void KerAuxiliary3D(ACC<Real>& uf);
-
-	/*ToDo add the rest*/
-};
-
-
-
-
-#endif /* APPS_LBM_DEM_PRATI_H_ */
+#endif /* APPS_LBM_DEM_NOP_PRATI_H_ */

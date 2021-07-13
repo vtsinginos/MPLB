@@ -31,15 +31,15 @@
  */
 
 /*!
- * @brief   Class for handling PRATI scheme
+ * @brief   Kernel functions for prati scheme
  * @author  C. Tsigginos
- * @Details Kernel functions
+ * @details Kernel functions for Prati scheme
  */
 
-#ifndef PRATI_INC_
-#define PRATI_INC_
 
-#include "prati.h"
+#ifndef PRATI_KERNEL_INC_
+#define PRATI_KERNEL_INC_
+
 #include "ops_lib_core.h"
 
 #ifdef OPS_MPI
@@ -49,35 +49,206 @@
 #include "model.h"
 #include "flowfield_host_device.h"
 #include "model_host_device.h"
+#include "force_fsi_host_device.h"
 
-/*void Prati::KerAuxiliary3D(ACC<Real>& uf) {
+void KerInitializePrati(ACC<Real>& Fd, const int* size) {
+
+	int nElems = (*size);
+	for (int iDir = 0; iDir < nElems; iDir++)
+		Fd(iDir, 0, 0, 0) = 0.0;
 
 
-}*/
+}
 
-void Prati::KerCollisionPrati3D(ACC<Real>& fcopy, ACC<Real>& Fd, const ACC<Real> f,
-								const ACC<Real>& coordinates, const ACC<Real>& nodeType,
-								const ACC<Real>& Rho, const ACC<Real>& U, const ACC<Real>& V,
-								const ACC<Real>& W,const ACC<int> &id,const ACC<Real>& sfp,
-								const ACC<Real>& vp, const Real* dt, const Real* tauRef,
-								const int* forceFlag, const Real* force, const Real* gamma,
-								const int* nElem, const int* spacedim, const int* lattIdx) {
+void KerPratiUpdateU3D(ACC<Real>&U, const ACC<int>& nodeType, const ACC<int>& idp,
+		const ACC<Real>& sfm, const ACC<Real>& vp, const ACC<Real>& xf, const Real* dt, const Real* tau,
+		const Real* gammaM, const int* typeForce, const Real* forceInput, const int* sizeForce,
+		const int* noelems, const int* spacedim) {
+
+	int SPACEDIM = (*spacedim);
+	int NELEM = (*noelems);
+	Real poros = 1.0;
+	Real sfEff = 0.0;
+	Real eff;
+	int noTot = 0;
+	ForceType forceFlag =(ForceType)static_cast<int>(*typeForce);
+	int forceSize = (*sizeForce);
+	Real force[SPACEDIM], xfl[SPACEDIM];
+	VertexType vt = (VertexType) nodeType(0, 0, 0);
+	if (vt != VertexType::ImmersedSolid) {
+
+		for (int iPar = 0 ; iPar < NELEM; iPar++)  {
+			poros -= sfm(iPar, 0, 0, 0);
+			noTot+= (idp(iPar, 0, 0, 0) > -1);
+		}
+
+
+		if (forceFlag != noForce) {
+			for (int iDir = 0; iDir < SPACEDIM; iDir++)
+				xfl[iDir] = xf(iDir, 0, 0, 0);
+
+			calculateForce(force, forceInput, xfl, forceFlag, forceSize, SPACEDIM);
+			U(0, 0, 0) += 0.5 * poros * (*dt) * force[0]; //OK
+		}
+
+
+
+
+
+
+		for (int iPar = 0; iPar < noTot; iPar++) {
+			eff = (*tau) /((*tau) + (*gammaM) * (*dt) * (1 - sfm(iPar, 0, 0, 0)));
+			U(0, 0, 0) += 0.5 * sfm(iPar, 0, 0, 0) * eff * vp(SPACEDIM * iPar, 0, 0, 0);
+			sfEff += eff * sfm(iPar, 0 , 0, 0);
+		}
+
+#ifdef CPU
+		if (poros < 1.0) {
+#endif
+			U(0, 0, 0) /=(1.0 + 0.5 * sfEff);
+
+#ifdef CPU
+		}
+#endif
+	}
+
+
+}
+
+void KerPratiUpdateV3D(ACC<Real>&V, const ACC<int>& nodeType, const ACC<int>& idp,
+		const ACC<Real>& sfm, const ACC<Real>& vp, const ACC<Real>& xf, const Real* dt, const Real* tau,
+		const Real* gammaM, const int* typeForce, const Real* forceInput, const int* sizeForce,
+		const int* noelems, const int* spacedim) {
+
+	int SPACEDIM = (*spacedim);
+	int NELEM = (*noelems);
+	Real poros = 1.0;
+	Real eff;
+	Real sfEff = 0.0;
+	int noTot = 0;
+	ForceType forceFlag =(ForceType)static_cast<int>(*typeForce);
+	int forceSize = (*sizeForce);
+	Real force[SPACEDIM], xfl[SPACEDIM];
+
+	VertexType vt = (VertexType) nodeType(0, 0, 0);
+	if (vt != VertexType::ImmersedSolid) {
+
+		for (int iPar = 0 ; iPar < NELEM; iPar++)  {
+			poros -= sfm(iPar, 0, 0, 0);
+			noTot+= (idp(iPar, 0, 0, 0) > -1);
+		}
+
+		if (forceFlag != noForce) {
+			for (int iDir = 0; iDir < SPACEDIM; iDir++)
+				xfl[iDir] = xf(iDir, 0, 0, 0);
+
+			calculateForce(force, forceInput, xfl, forceFlag, forceSize, SPACEDIM);
+
+			V(0, 0, 0) += 0.5 * poros * (*dt) * force[1]; //OK-We may want to add another function
+		}
+
+		for (int iPar = 0; iPar < noTot; iPar++) {
+			eff = (*tau) /((*tau) + (*gammaM) * (*dt) * (1 - sfm(iPar, 0, 0, 0)));
+			sfEff += eff * sfm(iPar, 0 , 0, 0);
+			V(0, 0, 0) += 0.5 * sfm(iPar, 0, 0, 0) * eff * vp(SPACEDIM * iPar + 1, 0, 0, 0);
+		}
+
+#ifdef CPU
+		if (poros < 1.0) {
+#endif
+			Real sf = 1.0 - poros;
+			V(0, 0, 0) /=(1.0 + 0.5 * sfEff);
+
+#ifdef CPU
+		}
+#endif
+	}
+
+
+}
+
+void KerPratiUpdateW3D(ACC<Real>&W, const ACC<int>& nodeType, const ACC<int>& idp,
+		const ACC<Real>& sfm, const ACC<Real>& vp, const ACC<Real>& xf, const Real* dt, const Real* tau,
+		const Real* gammaM, const int* typeForce, const Real* forceInput, const int* sizeForce,
+		const int* noelems, const int* spacedim) {
+
+	int SPACEDIM = (*spacedim);
+	int NELEM = (*noelems);
+	Real poros = 1.0;
+	Real sfEff = 0.0;
+	Real eff;
+	int noTot = 0;
+	ForceType forceFlag =(ForceType)static_cast<int>(*typeForce);
+	int forceSize = (*sizeForce);
+	Real force[SPACEDIM], xfl[SPACEDIM];
+
+	VertexType vt = (VertexType) nodeType(0, 0, 0);
+	if (vt != VertexType::ImmersedSolid) {
+
+		for (int iPar = 0 ; iPar < NELEM; iPar++)  {
+			poros -= sfm(iPar, 0, 0, 0);
+			noTot+= (idp(iPar, 0, 0, 0) > -1);
+		}
+
+		if (forceFlag != noForce) {
+			for (int iDir = 0; iDir < SPACEDIM; iDir++)
+				xfl[iDir] = xf(iDir, 0, 0, 0);
+
+			calculateForce(force, forceInput, xfl, forceFlag, forceSize, SPACEDIM);
+
+			W(0, 0, 0) += 0.5 * poros * (*dt) * force[2];
+
+		}
+
+
+
+
+		for (int iPar = 0; iPar < noTot; iPar++) {
+			eff = (*tau) /((*tau) + (*gammaM) * (*dt) * (1 - sfm(iPar, 0, 0, 0)));
+			sfEff += eff * sfm(iPar, 0 , 0, 0);
+			W(0, 0, 0) += 0.5 * sfm(iPar, 0, 0, 0) * eff * vp(SPACEDIM * iPar + 2, 0, 0, 0);
+
+		}
+
+#ifdef CPU
+		if (poros < 1.0) {
+#endif
+			Real sf = 1.0 - poros;
+			W(0, 0, 0) /=(1.0 + 0.5 * sfEff);
+#ifdef CPU
+		}
+#endif
+	}
+
+
+
+}
+
+void KerCollisionPrati(ACC<Real>& fcopy, ACC<Real>& Fd, const ACC<Real>& f,
+		const ACC<Real>& coordinates, const ACC<Real>& nodeType,
+		const ACC<Real>& Rho, const ACC<Real>& U, const ACC<Real>& V,
+		const ACC<Real>& W,const ACC<int> &id,const ACC<Real>& sfp,
+		const ACC<Real>& vp, const Real* dt, const Real* tauRef,
+		const int* typeForce, const Real* forceVariables, const int* sizeForce,
+		const Real* gamma, const int* nElem, const int* spacedim, const int* lattIdx) {
 
 	int NELEM = (*nElem);
 
 	VertexType vt = (VertexType)nodeType(0, 0, 0);
-
 	bool collision = (vt != VertexType::ImmersedSolid);
-
 	if (collision) {
+
 		int spaceDim = (*spacedim);
 		int NELEM = (*nElem);
 		Real sumx[NELEM], sumy[NELEM], sumz[NELEM];
 		Real dtOverTauPlusDt, dtOverTauF;
 		Real OmegaS, OmegaS1, OmegaS2, OmegaS3, OmegaS4, OmegaS5, OmegaS6;
+		Real force[spaceDim], xfl[spaceDim];
 		Real alpha, sf;
 		Real poros = 1.0;
 		Real eff, eff1, porosEff;
+		ForceType forceFlag =(ForceType)static_cast<int>(*typeForce);
+		int forceSize = (*sizeForce);
 
 		Real u[spaceDim];
 		int oppos, oppos1, noTot1;
@@ -122,19 +293,27 @@ void Prati::KerCollisionPrati3D(ACC<Real>& fcopy, ACC<Real>& Fd, const ACC<Real>
 			up[spaceDim * pIndex + 2] = vp(pIndex * spaceDim + 2, 0, 0, 0);
 		}
 
+		if (forceFlag != noForce) {
+			for (int iDir = 0; iDir < spaceDim; iDir++)
+				xfl[iDir] = coordinates(iDir, 0, 0, 0);
+
+			calculateForce(force, forceVariables, xfl, forceFlag, forceSize, spaceDim);
+
+		}
+
+
 		//Calculate BodyForce and equilibrium functions
 		for (int xiIndex = lattIdx[0]; xiIndex <= lattIdx[1]; xiIndex++) {
 			feq[xiIndex] = CalcBGKFeq(xiIndex, rho, u[0], u[1], u[2], T, 2);
-			if ((*forceFlag) == 1)
+			if (forceFlag != noForce)
 				bodyForce[xiIndex] = CalcBodyForce2ndOrder(xiIndex, rho, u[0], u[1], u[2], force); //TODO ADD it to the model_kernel.inc
 			else
 				bodyForce[xiIndex] = 0.0;
 
 			for (int iPar = 0; iPar < noTot; iPar++) {
 				if (sfp(iPar, 0, 0, 0) > 0.0)
-					feqS[iPar * numXi + xiIndex] = CalcBGKFeq(xiIndex, rho,
-							up[spaceDim * iPar], up[spaceDim * iPar + 1],
-							up[spaceDim * iPar + 2], T, 2);
+					feqS[iPar * numXi + xiIndex] = CalcBGKFeq(xiIndex, rho, up[spaceDim * iPar],
+							up[spaceDim * iPar + 1], up[spaceDim * iPar + 2], T, 2);
 				else
 					feqS[iPar * numXi + xiIndex] = 0.0;
 			}
@@ -156,7 +335,7 @@ void Prati::KerCollisionPrati3D(ACC<Real>& fcopy, ACC<Real>& Fd, const ACC<Real>
 					eff = tau /(tau + (*gamma) * (*dt) * (1.0 - sfp(iPar, 0, 0, 0)));
 					OmegaS5+= 0.5 * sfp(iPar, 0, 0) * eff *
 							alpha * (feqS[iPar * numXi + oppos]- feq[oppos]
-		                        + feqS[iPar * numXi + xiIndex] - feq[xiIndex]);
+							+ feqS[iPar * numXi + xiIndex] - feq[xiIndex]);
 				}
 
 				for (int iPar = 0; iPar < noTot; iPar++) {
@@ -181,23 +360,19 @@ void Prati::KerCollisionPrati3D(ACC<Real>& fcopy, ACC<Real>& Fd, const ACC<Real>
 					sumz[iPar] = sumz[iPar] - (OmegaS1 + OmegaS2 + OmegaS3 + OmegaS4 +
 							OmegaS5 + OmegaS6) * XI[xiIndex1 * LATTDIM + 2] * CS;
 				}
-
-
-
-
 			}
 			fcopy(xiIndex1, 0, 0, 0) = f(xiIndex1, 0, 0, 0) - dtOverTauPlusDt
 					* (f(xiIndex1, 0, 0, 0)-feq[xiIndex]) + dtOverTauF * bodyForce[xiIndex] + OmegaS;
 #ifdef CPU
-            const Real res{fcopy(xiIndex, 0, 0, 0)};
-            if (std::isnan(res) || res < 0 || std::isinf(res)) {
-                ops_printf(
-                    "Error-PRATI: Distribution function %f becomes "
-                    "invalid for the component %i at  the lattice "
-                    "%i\n",
-                    res, 0, xiIndex);
-                assert(!(std::isnan(res) || res < 0 || std::isinf(res)));
-            }
+			const Real res{fcopy(xiIndex, 0, 0, 0)};
+			if (std::isnan(res) || res < 0 || std::isinf(res)) {
+				ops_printf(
+					"Error-PRATI: Distribution function %f becomes "
+					"invalid for the component %i at  the lattice "
+					"%i\n",
+					res, 0, xiIndex);
+			assert(!(std::isnan(res) || res < 0 || std::isinf(res)));
+			}
 #endif  // CPU
 
 
@@ -215,166 +390,10 @@ void Prati::KerCollisionPrati3D(ACC<Real>& fcopy, ACC<Real>& Fd, const ACC<Real>
 
 }
 
-void Prati::KerInitialize(ACC<Real>& Fd, const int* size) {
-
-	int total = (*size);
-#ifdef OPS_3D
-	for (int iPart = 0; iPart < total; iPart++)
-		Fd(iPart, 0, 0, 0) = 0.0;
-#endif
-
-#ifdef OPS_2D
-	for (int iPart = 0; iPart < total; iPart++)
-		Fd(iPart, 0, 0) = 0.0;
-
-#endif
-}
-
-void Prati::KerPratiUpdateU3D(ACC<Real>&U, const ACC<int>& nodeType, const ACC<int>& idp,
-		const ACC<Real>& sfm, const ACC<Real>& vp, const Real* dt, const Real* tau,
-		const Real* gammaM, const int* forceflag, const Real* force, const int* noelems,
-		const int* spacedim) {
-
-	int SPACEDIM = (*spacedim);
-	int NELEM = (*noelems);
-	Real poros = 1.0;
-	Real sfEff = 0.0;
-	Real eff;
-	int noTot = 0;
-
-	VertexType vt = (VertexType) nodeType(0, 0, 0);
-	if (vt != VertexType::ImmersedSolid) {
-
-		for (int iPar = 0 ; iPar < NELEM; iPar++)  {
-			poros -= sfm(iPar, 0, 0, 0);
-			noTot+= (idp(iPar, 0, 0, 0) > -1);
-		}
-
-
-		if (*forceflag == 1) {
-			U(0, 0, 0) += 0.5 * poros * (*dt) * force[0]; //OK
-		}
-
-
-
-		for (int iPar = 0; iPar < noTot; iPar++) {
-			eff = (*tau) /((*tau) + (*gammaM) * (*dt) * (1 - sfm(iPar, 0, 0, 0)));
-			U(0, 0, 0) += 0.5 * sfm(iPar, 0, 0, 0) * eff * vp(SPACEDIM * iPar, 0, 0, 0);
-			sfEff += eff * sfm(iPar, 0 , 0, 0);
-		}
-
-#ifdef CPU
-		if (poros < 1.0) {
-#endif
-			U(0, 0, 0) /=(1.0 + 0.5 * sfEff);
-
-#ifdef CPU
-		}
-#endif
-	}
-
-
-}
-
-void Prati::KerPratiUpdateV3D(ACC<Real>&V, const ACC<int>& nodeType, const ACC<int>& idp,
-		const ACC<Real>& sfm, const ACC<Real>& vp, const Real* dt, const Real* tau,
-		const Real* gammaM, const int* forceflag, const Real* force, const int* noelems,
-		const int* spacedim) {
-
-	int SPACEDIM = (*spacedim);
-	int NELEM = (*noelems);
-	Real poros = 1.0;
-	Real eff;
-	Real sfEff = 0.0;
-	int noTot = 0;
-
-	VertexType vt = (VertexType) nodeType(0, 0, 0);
-	if (vt != VertexType::ImmersedSolid) {
-
-		for (int iPar = 0 ; iPar < NELEM; iPar++)  {
-			poros -= sfm(iPar, 0, 0, 0);
-			noTot+= (idp(iPar, 0, 0, 0) > -1);
-		}
-
-
-		if (*forceflag == 1) {
-			V(0, 0, 0) += 0.5 * poros * (*dt) * force[1]; //OK-We may want to add another function
-		}
-
-
-
-		for (int iPar = 0; iPar < noTot; iPar++) {
-			eff = (*tau) /((*tau) + (*gammaM) * (*dt) * (1 - sfm(iPar, 0, 0, 0)));
-			sfEff += eff * sfm(iPar, 0 , 0, 0);
-			V(0, 0, 0) += 0.5 * sfm(iPar, 0, 0, 0) * eff * vp(SPACEDIM * iPar + 1, 0, 0, 0);
-		}
-
-#ifdef CPU
-		if (poros < 1.0) {
-#endif
-			Real sf = 1.0 - poros;
-			V(0, 0, 0) /=(1.0 + 0.5 * sfEff);
-
-#ifdef CPU
-		}
-#endif
-	}
-
-
-}
-
-void Prati::KerPratiUpdateW3D(ACC<Real>&W, const ACC<int>& nodeType, const ACC<int>& idp,
-		const ACC<Real>& sfm, const ACC<Real>& vp, const Real* dt, const Real* tau,
-		const Real* gammaM, const int* forceflag, const Real* force, const int* noelems,
-		const int* spacedim) {
-
-	int SPACEDIM = (*spacedim);
-	int NELEM = (*noelems);
-	Real poros = 1.0;
-	Real sfEff = 0.0;
-	Real eff;
-	int noTot = 0;
-
-	VertexType vt = (VertexType) nodeType(0, 0, 0);
-	if (vt != VertexType::ImmersedSolid) {
-
-		for (int iPar = 0 ; iPar < NELEM; iPar++)  {
-			poros -= sfm(iPar, 0, 0, 0);
-			noTot+= (idp(iPar, 0, 0, 0) > -1);
-		}
-
-
-		if (*forceflag == 1) {
-			W(0, 0, 0) += 0.5 * poros * (*dt) * force[2];
-		}
-
-
-
-		for (int iPar = 0; iPar < noTot; iPar++) {
-			eff = (*tau) /((*tau) + (*gammaM) * (*dt) * (1 - sfm(iPar, 0, 0, 0)));
-			sfEff += eff * sfm(iPar, 0 , 0, 0);
-			W(0, 0, 0) += 0.5 * sfm(iPar, 0, 0, 0) * eff * vp(SPACEDIM * iPar + 2, 0, 0, 0);
-
-		}
-
-#ifdef CPU
-		if (poros < 1.0) {
-#endif
-			Real sf = 1.0 - poros;
-			W(0, 0, 0) /=(1.0 + 0.5 * sfEff);
-#ifdef CPU
-		}
-#endif
-	}
-
-
-}
-
-
-void Prati::KerDragPRATI(const ACC<int>& id, const ACC<Real>& sfp, const ACC<Real>& xf,
-						const ACC<Real>& Fd, Real* FDp, Real* TDp, const int* idp, const Real* xp,
-						const Real* dt, const Real* tau, const Real* gamma,
-						const int* spacedim, const int* nelem) {
+void KerDragPrati(const ACC<int>& id, const ACC<Real>& sfp, const ACC<Real>& xf,
+		const ACC<Real>& Fd, Real* FDp, Real* TDp, const int* idp, const Real* xp,
+		const Real* dt, const Real* tau, const Real* gamma,
+		const int* spacedim, const int* nelem) {
 
 	int SPACEDIM = (*spacedim);
 	int NELEM = (*nelem);
@@ -392,7 +411,6 @@ void Prati::KerDragPRATI(const ACC<int>& id, const ACC<Real>& sfp, const ACC<Rea
 		noTot += (id(pIndex, 0, 0, 0) > -1);
 		poros -= sfp(pIndex, 0, 0, 0);
 	}
-
 
 	porosEff = 1.0;
 	for (int pIndex = 0; pIndex < noTot; pIndex++) {
@@ -421,7 +439,7 @@ void Prati::KerDragPRATI(const ACC<int>& id, const ACC<Real>& sfp, const ACC<Rea
 			TDp[1] += Beta * ((xfl[2] - xp[2]) * Fd(loc, 0, 0, 0) - (xfl[0] - xp[0]) * Fd(loc+2, 0, 0, 0));
 			TDp[2] += Beta * ((xfl[0] - xp[0]) * Fd(loc+1, 0, 0, 0) - (xfl[1] - xp[1]) * Fd(loc, 0, 0, 0));
 
-		//	ops_printf("rank %d: FDp = [%e %e %e]\n", ops_get_proc(), FDp[0], FDp[1], FDp[2]);
+//	ops_printf("rank %d: FDp = [%e %e %e]\n", ops_get_proc(), FDp[0], FDp[1], FDp[2]);
 			break;
 		}
 	}
@@ -430,4 +448,4 @@ void Prati::KerDragPRATI(const ACC<int>& id, const ACC<Real>& sfp, const ACC<Rea
 }
 
 
-#endif
+#endif /* APPS_LBM_DEM_NOP_PRATI_KERNEL_INC_ */

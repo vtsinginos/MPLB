@@ -1,15 +1,15 @@
-#ifndef POROS_GRID_HOST_DEVICE_H_
-#define POROS_GRID_HOST_DEVICE_H_
+#ifndef GRID_MAPPING_HOST_DEVICE_H
+#define GRID_MAPPING_HOST_DEVICE_H
 
 #ifndef OPS_FUN_PREFIX
 #define OPS_FUN_PREFIX
 #endif
 
 #include <cmath>
-#include "poros_grid.h"
+#include "type.h"
 
-inline OPS_FUN_PREFIX Real PorosGrid::ComputeCircularSolidFractionGrid(const Real* xfl,const Real* xPart,
-		const Real Rp, Real* xavg, const Real dx, const int noGrid) {
+static inline OPS_FUN_PREFIX Real ComputeCircularSolidFractionGrid(const Real* xfl,
+		const Real* xPart, const Real Rp, Real* xavg, const Real dx, const int noGrid) {
 
 	int Nx = noGrid + 2;
 	int Ny = noGrid + 2;
@@ -53,13 +53,6 @@ inline OPS_FUN_PREFIX Real PorosGrid::ComputeCircularSolidFractionGrid(const Rea
 
 	return static_cast<Real>(inter) / static_cast<Real>(Nx * Ny * Nz);
 
-
-
-
 }
 
-
-
-
-
-#endif /* APPS_LBM_DEM_POROS_GRID_HOST_DEVICE_H_ */
+#endif

@@ -28,46 +28,27 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
-*/
-
-/*! @brief   Base calls for mapping particles in the LBM grid
- * @author C. Tsigginos
- * @details Base consturctor and output files
  */
 
-#include "particle_to_grid_base.h"
+/*!
+ * @brief   Functions for implementation of force into FSI models
+ * @author  C. Tsigginos
+ */
 
-ParticleToGridBase::ParticleToGridBase(int particleshape, int spacedim) {
+#ifndef FORCE_FSI_H_
+#define FORCE_FSI_H_
 
-	spaceDim = spacedim;
+#include "flowfield.h"
+#include "type.h"
+#include <vector>
+#include "force_fsi_host_device.h"
 
-	particleDiscriptor = (ParticleType) particleshape;
-	ops_printf("Particle type passed is %d\n", particleshape);
-	ops_printf("Particle type assigned is %d\n", (ParticleType) particleDiscriptor);
-	noElem = 1;
-
-	requiresCopy = false;
-
-}
-
-void ParticleToGridBase::WriteToHdf5(const std::string& caseName, const SizeType timeStep) {
-
-	for (auto& element : mappingRealVariableList )
-		element.WriteToHDF5(caseName, timeStep);
-
-	for (auto& element : mappingIntVariableList)
-		element.WriteToHDF5(caseName, timeStep);
-
-}
-
-RealField& ParticleToGridBase::GetRealFieldVariable(int index) {
-
-	return mappingRealVariableList.at(index);
-}
-
-IntField& ParticleToGridBase::GetIntFieldVariable(int index) {
-
-	return mappingIntVariableList.at(index);
-}
+struct Forces {
+	std::vector<Real> forceDefinition;
+	ForceType model;
+};
 
 
+void DefineForceModel(std::vector<Real>& params, ForceType forceModel);
+Forces& ForceModel();
+#endif /* APPS_LBM_DEM_NOP_FORCE_FSI_H_ */

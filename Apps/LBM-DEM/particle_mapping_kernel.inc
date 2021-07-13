@@ -28,25 +28,44 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
- * /*! @brief  Head files for configuring the fluid-particle interaction model
- * @author C. Tsigginos
  */
 
-#ifndef APPS_LBM_DEM_MPLB_DEM_H_
-#define APPS_LBM_DEM_MPLB_DEM_H_
-
-#include "dem_data.h"
-#include "dem_handle.h"
-#include "block_particle_helper.h"
-#include "fpi.h"
-//#include "psm.h"
-//#include "prati.h"
-//#include "solidFraction.h"
-//#include "mui_interface.h"
+/*!
+ * @brief   Kernel for initializing ops lists for particle mapping
+ * @author  C. Tsigginos
+ *
+ */
 
 
+#ifndef PARTICLE_MAPPING_KERNEL_INC
+#define PARTICLE_MAPPING_KERNEL_INC
+
+#ifdef OPS_MPI
+#include "ops_mpi_core.h"
+#endif
+#include "type.h"
+#include "model.h"
+#include "ops_seq_v2.h"
+#include "flowfield_host_device.h"
+#include "model_host_device.h"
+
+void KerInitializePorousGrid(ACC<Real>& sf, ACC<Real>& vP, ACC<Real>& xAvg, ACC<int>& idp,
+		const int* sizeReal, const int* sizeInt) {
+
+	int sizeI = (*sizeInt);
+
+	for (int iDir = 0 ; iDir < sizeReal[0]; iDir++)
+		sf(iDir, 0, 0, 0) = 0.0;
+
+	for (int iDir = 0; iDir < sizeReal[1]; iDir++)
+		vP(iDir, 0, 0, 0) = 0.0;
+
+	for (int iDir = 0; iDir < sizeReal[2]; iDir++)
+		xAvg(iDir, 0, 0, 0) = -100.0;
+
+	for (int iDir = 0; iDir < sizeI; iDir++)
+		idp(iDir, 0, 0, 0) = -1;
+}
 
 
-
-#endif /* APPS_LBM_DEM_MPLB_DEM_H_ */
+#endif

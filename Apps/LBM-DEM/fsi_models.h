@@ -28,51 +28,20 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 
-/*! @brief Base class for mapping particles into the LBM grid,
- *  @author C. Tsigginos
- **/
+/*!
+ * @brief   Header for adding new FSI models that implemented in MPLB
+ * @author  C. Tsigginos
+ */
+#ifndef FSI_MODELS_H
+#define FSI_MODELS_H
 
-
-
-#ifndef PARTICLE_TO_GRID_BASE_H_
-#define PARTICLE_TO_GRID_BASE_H_
-
-#include "field.h"
-#include "type.h"
-#include <vector>
-#include <string.h>
-
-class ParticleToGridBase {
-
-	protected:
-		enum ParticleType {ParticleSpherical = 0,
-			ParticleSuperQuadratic= 1, ParticleMesh = 2, ParticleNone = 3};
-
-		ParticleType particleDiscriptor;
-		int spaceDim;
-		int requiresCopy;
-		int noElem;
-		std::vector<RealField> mappingRealVariableList;
-		std::vector<IntField> mappingIntVariableList;
-
-	public:
-
-		ParticleToGridBase(int particleshape, int spacedim);
-		virtual ~ParticleToGridBase() { };
-		virtual int  particleShape() {return 0;};
-		virtual void DefineVariables(int noElem, SizeType timestep = 0) { };
-		virtual void ParticleProjection() { };
-		virtual void UpdateProjection() { };
-		virtual void WriteToHdf5(const std::string& caseName, const SizeType timeStep);
-		virtual void InitializeVariables() { };
-		virtual void PrintMappingVariables() { };
-		virtual RealField& GetRealFieldVariable(int index);
-		virtual IntField& GetIntFieldVariable(int index);
-		virtual void ReturnParticleShape() { ops_printf("Base class do not contain particle shape\n"); };
-};
+#include "prati.h"
+#include "psm.h"
 
 
 
-#endif
+
+
+#endif /* APPS_LBM_DEM_NOP_FSI_MODELS_H_ */

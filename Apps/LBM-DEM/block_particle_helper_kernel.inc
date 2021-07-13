@@ -30,18 +30,47 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*! @brief  Head files for configuring the fluid-particle interaction model
- * @author C. Tsigginos
- * @details And new fluid-particle (structure) interaction model must be
- * inserted here.
+/*!
+ * @brief   Kernel for block particle helper functions
+ * @author  C. Tsigginos
+ * @details: Kernel for evaluation of local box box bound outside
+ * 			the blockPartile class
  */
-#ifndef FPI_H_
-#define FPI_H_
 
-#include "fsi_base.h"
-#include "prati.h"
-#include "psm.h"
+#ifndef BLOCK_PARTICLE_HELPER_KERNEL_INC
+#define BLOCK_PARTICLE_HELPER_KERNEL_INC
+
+#include "ops_lib_core.h"
+
+#ifdef OPS_MPI
+#include "ops_mpi_core.h"
+#endif
+#include "type.h"
+#include "model.h"
+
+void KerCarBound(const ACC<Real>& xf, Real* xb, const int* spacedim) {
+
+	int size = (* spacedim);
+
+
+	for (int idx = 0; idx < size; idx++) {
+#ifdef OPS_2D
+		xb[idx] = xf(idx, 0, 0);
+#endif
+
+#ifdef OPS_3D
+		xb[idx] = xf(idx, 0 , 0, 0);
+#endif
+
+	}
 
 
 
-#endif /* APPS_LBM_DEM_FPI_H_ */
+}
+
+
+
+
+
+
+#endif /* APPS_LBM_DEM_BLOCK_PARTICLE_HELPER_KERNEL_INC_ */
