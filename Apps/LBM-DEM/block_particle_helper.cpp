@@ -365,10 +365,11 @@ void DefineBlockOwnership() {
 
 }
 
-void DefineLocalBoxBound() {
+/*void DefineLocalBoxBound() {
 
 	for (auto& blockParticle : BlockParticleList) {
 		if (blockParticle.second.owned)
 			blockParticle.second.FindBoxLocalBound();
 	}
 }
+*/

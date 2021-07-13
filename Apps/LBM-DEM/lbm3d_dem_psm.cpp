@@ -231,11 +231,9 @@ void simulate() {
 
    SetupParticleBoxes(lbmDemData);
 
-
    //Setting up DEM-LBM
    SetupDEMLBM(lbmDemData);
-   ops_printf("I run the simulation\n");
-   exit(EXIT_FAILURE);
+
 
    IterateFSI(lbmDemData, 1);
 
