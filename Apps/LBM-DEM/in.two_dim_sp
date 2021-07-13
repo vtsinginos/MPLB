@@ -1,0 +1,73 @@
+#Two dimensional input file
+echo 		both
+
+dimension   3
+processors * * 1 
+atom_style	granular
+boundary	f f f
+newton 		off 
+communicate	single vel yes
+units		lj
+
+read_data         readParticles.txt
+
+
+#create_box	2 reg
+
+
+
+
+neighbor	0.05 bin
+neigh_modify	delay 0
+
+fix			m1 all property/global youngsModulus peratomtype  40.4044 4040.4044
+#fix 			m1 all property/global kn peratomtypepair 2 
+fix			m2 all property/global poissonsRatio peratomtype   0.3 0.3
+fix			m3 all property/global coefficientRestitution  peratomtypepair 2 0.001 0.001 0.001 0.001
+fix			m4 all property/global coefficientFriction	peratomtypepair 2 0.5 0.5 0.5 0.0
+fix         m5 all property/global characteristicVelocity scalar 0.05
+pair_style	gran/hertz/history #Hertz model
+pair_coeff  * *
+
+timestep    0.0072168
+
+fix			integration all nve/sphere
+fix			grav all gravity .0000008 vector 0.0 0.0 -1.0 density 1.0
+#fix			grav all gravity .000000026 vector 0.0 -1.0 0.0 density 1.0
+#Setting up the walls
+
+
+#fix 		left_y_wall all wall/gran/hertz/history mesh n_meshes 1 meshes left_y_wall_mesh
+#fix         bottom_wall all wall/gran/hertz/history primitive type 2 zplane 0.042
+fix			lbmMui all lbm3d/mui dtLBM 0.0072168
+
+
+#region of insertion
+
+
+
+
+
+compute		l all erotate/sphere
+compute	    contacts all contact/atom
+compute     avg_cont all reduce ave c_contacts
+compute     cont  all pair/gran/local id pos force delta sliding
+
+thermo_style	custom step atoms ke c_l c_avg_cont
+thermo 		100
+thermo_modify	lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+compute_modify	thermo_temp dynamic yes
+
+#create dump
+dump	dmp all custom 150000 post/dump*.movingMesh id type x y z ix iy iz vx vy vz fx fy fz tqx tqy tqz omegax omegay omegaz radius
+#dump_modify dmp format "%d %d %14.8f %14.8f %d %d %d %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f"
+dump     dmp1 all local 150000 post/dump*.contacts c_cont[7] c_cont[8] c_cont[9] c_cont[1] c_cont[2] c_cont[3] c_cont[4] c_cont[5] c_cont[6] c_cont[10] c_cont[11] c_cont[12] c_cont[13] c_cont[14]
+run		60
+
+write_restart formation_particles3D.*
+
+#E=404.00 2.0100388e-09 1.0456152e-09       3.5424 mu=0.5
+#E=40.44 mu=0.5 on wall  9.7503129e-09 3.4476282e-09       3.5603
+#E=40.44 mu=0.5 on wall Rest = 0.06 7.1923607e-13 2.2498313e-13       3.3697
+#E=404.44 mu0.05 on wall Rest= 0.06  6.0776285e-13 2.429161e-13       3.3251 (and drops)

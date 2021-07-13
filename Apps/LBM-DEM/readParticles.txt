@@ -1,0 +1,12 @@
+Inserting particles for 1 processes
+
+2 atoms
+      0.000000      1. xlo xhi
+      0.000000      1. ylo yhi
+      0.000000      1. zlo zhi
+2 atom types
+Atoms
+
+   1    1     0.1250000 1.16    0.3333     0.5    0.5
+   2    1     0.1250000 1.16    0.6666     0.5    0.5
+  

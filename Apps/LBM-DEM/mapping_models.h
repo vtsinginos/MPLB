@@ -38,8 +38,8 @@
 #define MAPPING_MODELS_H_
 
 #include "poros_spherical.h"
-#include "particle_to_grid_base.h"
-#include "poros_grid.h"
+#include "grid_mapping.h"
+
 
 
 
