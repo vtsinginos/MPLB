@@ -37,7 +37,7 @@
 #ifndef FSI_MODELS_H
 #define FSI_MODELS_H
 
-#include "prati.h"
+
 #include "psm.h"
 
 

@@ -124,7 +124,7 @@ void simulate() {
 
     std::vector<ParticleMappingModel> modelParticles{sphericalMapping};
     std::vector<int> copyFrom{-1};
-    std::vector<FluidParticleModel> componentModel{Prati};
+    std::vector<FluidParticleModel> componentModel{PSM};
     std::vector<int>  componentFSI{0};
     ParticleShapeDiscriptor particleShape{spherical};
 

@@ -91,40 +91,7 @@ void DefinePsm(int iComponent, int spaceDim, FluidParticleModel modelU,
 
 	fpiModels.insert(std::make_pair(iComponent, model));
 }
-/***************************************************************************
- * Define flags fpr PSM
- * 	 ownedPostVelocity: True
- *    ownedForceModel: True
- *	 ownedPreCollision: False
- *	 ownedCollisionModel: True
- *	 ownedPostStreaming: false
- *	 ownedDragForce : True
- *	 ownedInitialize: true
- * 	 thermalFlag: false
- */
 
-void DefinePrati(int iComponent, int spaceDim, FluidParticleModel modelU,
-		std::vector<Real> variables, SizeType timeStep) {
-
-	std::map<int, Component> components = g_Components();
-	//Get elem from mapping_particles
-	int nElem= particleMappingModels.at(iComponent)->NumberOfElements();
-
-	std::string name{"Fd"};
-	name += std::to_string(iComponent);
-
-	std::vector<std::string> nameOfRealVars{name};//TODO append the component
-	std::vector<int> sizeRealVars{spaceDim * nElem};
-	std::vector<std::string> nameOfIntVars{};
-	std::vector<int> sizeIntVars{};
-	std::vector<bool> flagParameters{true, true, false, true, false, true, true, false};
-
-	std::shared_ptr<FpiData> model(new FpiData(components.at(iComponent), spaceDim, modelU, nElem,
-				nameOfRealVars, sizeRealVars, nameOfIntVars, sizeIntVars, flagParameters,
-				variables, timeStep));
-
-	fpiModels.insert(std::make_pair(iComponent, model));
-}
 
 void DefineInteractionModels(std::vector<FluidParticleModel> particleModels,
 						     std::vector<int> compoId, std::vector<Real> variables,
@@ -142,9 +109,6 @@ void DefineInteractionModels(std::vector<FluidParticleModel> particleModels,
 				break;
 			case PSM:
 				DefinePsm(compoId.at(isize), spaceDim, PSM, variables, timeStep);
-				break;
-			case Prati:
-				DefinePrati(compoId.at(isize), spaceDim, Prati, variables, timeStep);
 				break;
 			default:
 				DefinePsm(compoId.at(isize), spaceDim, PSM, variables, timeStep);
@@ -173,9 +137,6 @@ void FsiForceFunction(std::shared_ptr<FpiData>& fpiPtr) {
 		case PSM:
 			FsiForcePSM(fpiPtr);
 			break;
-		case Prati:
-			FsiForcePrati(fpiPtr);
-			break;
 		default:
 			ops_printf("FSi force function must not enter here\n");
 	}
@@ -191,9 +152,6 @@ void FsiCollisionFunction(std::shared_ptr<FpiData>& fpiPtr) {
 	switch (fpiPtr->GetModel()) {
 		case PSM:
 			FsiCollisionsPSM(fpiPtr);
-			break;
-		case Prati:
-			FsiCollisionsPrati(fpiPtr);
 			break;
 		default:
 			ops_printf("Fsi collision function must not enter here\n");
@@ -211,9 +169,6 @@ void FsiCalculateDragForce(std::shared_ptr<FpiData>& fpiPtr) {
 		case PSM:
 			CalculateDragPSM(fpiPtr);
 			break;
-		case Prati:
-			CalculateDragPrati(fpiPtr);
-			break;
 		default:
 			ops_printf("Drag calculation function must not enter here\n");
 	}
@@ -224,8 +179,6 @@ void FsiInitializeFunction(std::shared_ptr<FpiData>& fpiPtr) {
 			case PSM:
 				FsiInitializePSM(fpiPtr);
 				break;
-			case Prati:
-				FsiInitializePrati(fpiPtr);
 				break;
 			default:
 				ops_printf("Drag calculation function must not enter here\n");
