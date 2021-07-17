@@ -82,5 +82,4 @@ class MuiInterface {
 };
 
 
-
 #endif /* APPS_LBM_DEM_MUI_INTERFACE_BASE_H_ */

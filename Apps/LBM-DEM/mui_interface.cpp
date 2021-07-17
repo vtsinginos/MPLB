@@ -95,7 +95,6 @@ void MuiInterface::DefineProcBox(Real* xMin, Real* xMax) {
 	xMin[0] = std::numeric_limits<Real>::max();
 	xMin[1] = xMin[0];
 	xMin[2] = xMin[0];
-
 	xMax[0] = -1.0 * xMin[0];
 	xMax[1] = xMax[0];
 	xMax[2] = xMax[0];

@@ -12,15 +12,6 @@ ifdef MPLB_DIR
 	MPLB_LIB  = -L$(MPLB_DIR)
 endif
 
-#TO DO NEED TO CHANGE THE MAKE HDF5_INSTALL_PATH should become LIBRARY and INCLUDE
-#ifdef HDF5_INSTALL_PATH
-#  HDF5_INC 	  	:= -I$(HDF5_INSTALL_PATH)/include
-#  HDF5_LIB 	  	:= -L$(HDF5_INSTALL_PATH)/lib
-#endif
-#ifdef CHECKPOINTING
-#  HDF5_INC              := $(HDF5_INC) -DCHECKPOINTING
-#endif
-
 ifdef HDF5_INCLUDE_PATH
   HDF5_INC 	  	:= -I$(HDF5_INCLUDE_PATH)
 ifdef CHECKPOINTING
@@ -36,7 +27,7 @@ ifeq ($(OPS_COMPILER),clang)
 ifdef DEBUG
   CPPFLAGS  = -O0 -g -DUNIX -Wall -std=c++11 #-Wall
 else
-  CPPFLAGS  = -O3  -g -fPIC -DUNIX -Wall -std=c++11  #-Wall
+  CPPFLAGS  = -O3  -fPIC -DUNIX -Wall -std=c++11  #-Wall
 endif
   OMPFLAGS  = ""#-fopenmp
   MPICPP  = mpic++
@@ -52,6 +43,17 @@ endif
   OMPFLAGS  = -fopenmp
   MPICPP  = mpicxx
   MPIFLAGS  = $(CPPFLAGS)
+else
+ifeq ($(OPS_COMPILER),archerGnu)
+  CPP   = CC
+ifdef DEBUG
+  CPPFLAGS  = -ggdb -DUNIX -Wall -std=c++11
+else
+  CPPFLAGS  = -O3 -std=c++11 -fPIC -DUNIX   
+endif
+  OMPFLAGS = -fopenmp
+  MPICPP   = CC
+  MPIFLAGS = $(CPPFLAGS)
 else
 ifeq ($(OPS_COMPILER),intel)
   CPP   = icpc
@@ -130,6 +132,7 @@ endif
 endif
 endif
 endif
+endif
 
 NVCC  := $(CUDA_INSTALL_PATH)/bin/nvcc
 # flags for nvcc
@@ -158,7 +161,9 @@ endif
 # master to make all versions
 #
 
+
 TARGETS = lbm2d_dev_seq lbm2d_seq lbm2d_dev_mpi lbm2d_mpi lbm2d_openmp lbm2d_mpi_openmp lbm2d_cuda lbm2d_mpi_cuda lbm2d_opencl lbm2d_mpi_opencl
+
 
 ifeq ($(OPS_COMPILER),pgi)
 #TARGETS += lbm2d_openacc lbm2d_mpi_openacc
@@ -234,6 +239,7 @@ lbm2d_openmp: Makefile type_ops.cpp boundary_ops.cpp scheme_ops.cpp flowfield_op
 #
 # Sequential version
 #
+
 lbm3d_seq :
 	$(CPP) $(CPPFLAGS) ./MPI_OpenMP/lbm3d_cavity_cpu_kernels.cpp boundary.cpp evolution3d_ops.cpp scheme.cpp configuration.cpp model.cpp flowfield_ops.cpp lbm3d_cavity_ops.cpp type.cpp  $(OPS_INC) $(HDF5_INC) $(MPLB_INC) $(OPS_LIB) $(MPLB_LIB) -DOPS_3D -DCPU -D$(LEVEL)  -lops_seq -lops_hdf5_seq  $(HDF5_LIB)  -o lbm3d_seq
 
@@ -327,3 +333,4 @@ openacc_error:
 
 clean:
 	rm -f lbm2d_dev_seq lbm3d_dem_mpi lbm2d_seq lbm2d_dev_seq lbm2d_mpi lbm2d_dev_mpi lbm2d_openmp lbm2d_mpi_openmp lbm2d_cuda lbm2d_mpi_cuda lbm2d_openacc lbm2d_mpi_openacc lbm2d_opencl lbm2d_mpi_opencl ./CUDA/*.o ./OpenACC/*.o *.o lbm2d_opencl lbm3d_dev_seq lbm3d_seq lbm3d_dev_seq lbm3d_mpi lbm3d_dev_mpi./OpenCL/*.o *.o
+
